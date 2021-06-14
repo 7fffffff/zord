@@ -1,0 +1,4 @@
+github.com/7fffffff/jsonconv v0.2.0 h1:Xtt1yvC3W/m+qxiLGR9RELzlSxdZ5MeoGAGkd8dqnro=
+github.com/7fffffff/jsonconv v0.2.0/go.mod h1:NF+60DzeLmrhtfXrFIp/JBCXeW+Xq14/2wgKAbOFOLU=
+github.com/rs/zerolog v1.5.0 h1:80OaKAATLP7wQBHDS3IynxVycyIGmnWmPYCVd6AFQxY=
+github.com/rs/zerolog v1.5.0/go.mod h1:YbFCdg8HfsridGWAh22vktObvhZbQsZXe4/zB0OKkWU=
