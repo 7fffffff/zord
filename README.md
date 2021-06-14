@@ -3,7 +3,7 @@
 zord provides a writer for https://github.com/rs/zerolog that reorders the log
 event objects for better readability.
 
-# Example
+## Example
 
 ```go
 package main
