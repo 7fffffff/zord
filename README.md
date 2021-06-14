@@ -22,6 +22,7 @@ func main() {
 	logger.Debug().Int("a", 1).Msg("hello, world!")
 	// => {"level":"debug","service":"greeter","a":1,"time":"2006-01-02T15:04:05-07:00","message":"hello, world!"}
 
+	// let's move some common fields to the front
 	writer := zord.NewZordWriter()
 	//writer.Wr = os.Stderr // default
 	//writer.FirstKeys = zord.DefaultFirstKeys() // default
