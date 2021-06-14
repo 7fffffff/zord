@@ -72,11 +72,6 @@ BenchmarkZordWriter-6              130533      9314 ns/op     3080 B/op     28 a
 
 zerolog doesn't deduplicate keys and neither does ZordWriter.
 
-## Documentation
-
-API documentation is available at:
-https://pkg.go.dev/github.com/7fffffff/zord
-
 ## License
 
 Round Robin License:
