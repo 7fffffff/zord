@@ -44,9 +44,9 @@ var zordWriterTests = []zordWriterTest{
 	},
 	{
 		desc:      "duplicate keys allowed",
-		obj:       []byte(`{"bbb":"bar", "aaa":"foo", "ccc":null, "aaa": false}`),
+		obj:       []byte(`{"bbb":true, "aaa":"foo", "ccc":null, "aaa": false}`),
 		firstKeys: []string{`ccc`},
-		expected:  []byte(`{"ccc":null,"bbb":"bar","aaa":"foo","aaa":false}`),
+		expected:  []byte(`{"ccc":null,"bbb":true,"aaa":"foo","aaa":false}`),
 	},
 	{
 		desc:      "array",
