@@ -103,9 +103,9 @@ var reorderTests = []reorderTest{
 	},
 	{
 		desc:      "number values",
-		obj:       []byte(`{"aaa":0.1, "bbb":0, "ccc":-123.333}`),
+		obj:       []byte(`{"aaa":0.1, "bbb":0, "ccc":-123.333, "ddd": 100}`),
 		firstKeys: []string{`ccc`},
-		expected:  []byte(`{"ccc":-123.333,"aaa":0.1,"bbb":0}`),
+		expected:  []byte(`{"ccc":-123.333,"aaa":0.1,"bbb":0,"ddd":100}`),
 	},
 	{
 		desc:      "number values with exponent",

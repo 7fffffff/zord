@@ -273,7 +273,7 @@ func (p *parser) parseNumberInt(buf []byte, initialPos int) (start, end int, err
 		return initialPos, i + 1, nil
 	}
 	digits := 0
-	for i < len(buf) && '1' <= buf[i] && buf[i] <= '9' {
+	for i < len(buf) && '0' <= buf[i] && buf[i] <= '9' {
 		digits++
 		i++
 	}
