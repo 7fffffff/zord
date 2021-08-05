@@ -31,11 +31,11 @@ func (w sortedWriter) Write(event []byte) (n int, err error) {
 	if len(w.FirstKeys) == 0 {
 		return w.Wr.Write(event)
 	}
-	var data eventData
+	var pairs eventData
 	var buf = bytes.NewBuffer(make([]byte, 0, len(event)))
 	var dec = json.NewDecoder(bytes.NewReader(event))
 	dec.UseNumber()
-	err = dec.Decode(&data)
+	err = dec.Decode(&pairs)
 	n = int(dec.InputOffset())
 	if err != nil {
 		// If there's an error in the reordering process, it's more
@@ -47,17 +47,17 @@ func (w sortedWriter) Write(event []byte) (n int, err error) {
 	pairsWritten := 0
 	buf.WriteByte('{')
 	for _, key := range w.FirstKeys {
-		if value, ok := data[key]; ok {
+		if value, ok := pairs[key]; ok {
 			if pairsWritten > 0 {
 				buf.WriteByte(',')
 			}
 			w.writePair(buf, key, value)
 			pairsWritten++
-			delete(data, key)
+			delete(pairs, key)
 		}
 	}
-	keys := make([]string, 0, len(data))
-	for key := range data {
+	keys := make([]string, 0, len(pairs))
+	for key := range pairs {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
@@ -65,7 +65,7 @@ func (w sortedWriter) Write(event []byte) (n int, err error) {
 		if pairsWritten > 0 {
 			buf.WriteByte(',')
 		}
-		w.writePair(buf, key, data[key])
+		w.writePair(buf, key, pairs[key])
 		pairsWritten++
 	}
 	buf.WriteByte('}')
