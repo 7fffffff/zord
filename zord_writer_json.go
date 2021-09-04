@@ -1,3 +1,4 @@
+//go:build !binary_log
 // +build !binary_log
 
 package zord
@@ -27,9 +28,9 @@ func tryReorder(dest, src []byte, firstKeys []string) (extended []byte, n int, e
 	defer func() {
 		if r := recover(); r != nil {
 			if recoveredErr, ok := r.(error); ok {
-				err = recoveredErr
+				err = fmt.Errorf("zord reorder panic: %w", recoveredErr)
 			} else {
-				err = fmt.Errorf("panic: %v", r)
+				err = fmt.Errorf("zord reorder panic: %v", r)
 			}
 		}
 	}()
