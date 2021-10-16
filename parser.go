@@ -434,11 +434,19 @@ func (p *parser) parseValue(depth int, buf []byte, initialPos int) (start, end i
 	}
 }
 
+// the fastest method
+// https://dave.cheney.net/high-performance-json.html
+var whitespace = [256]bool{
+	' ':  true,
+	'\t': true,
+	'\n': true,
+	'\r': true,
+}
+
 func skipWhitespace(buf []byte, initialPos int) (pos int) {
 	pos = initialPos
 	for pos < len(buf) {
-		switch buf[pos] {
-		case ' ', '\n', '\r', '\t', '\b', '\f':
+		if c := buf[pos]; whitespace[c] {
 			pos++
 			continue
 		}
