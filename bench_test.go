@@ -1,7 +1,6 @@
 package zord
 
 import (
-	"bytes"
 	"errors"
 	"io"
 	"testing"
@@ -26,10 +25,6 @@ func logBenchFn(logger zerolog.Logger) {
 		Msg("the quick brown fox jumped over the lazy dog")
 }
 
-func newLogBenchBuffer() *bytes.Buffer {
-	return bytes.NewBuffer(make([]byte, 0, 512))
-}
-
 func BenchmarkZerologDefault(b *testing.B) {
 	logger := zerolog.New(io.Discard)
 	b.ReportAllocs()
@@ -39,7 +34,6 @@ func BenchmarkZerologDefault(b *testing.B) {
 }
 
 func BenchmarkZerologConsoleWriter(b *testing.B) {
-	buf := newLogBenchBuffer()
 	writer := zerolog.ConsoleWriter{
 		Out:     io.Discard,
 		NoColor: true,
@@ -47,7 +41,6 @@ func BenchmarkZerologConsoleWriter(b *testing.B) {
 	logger := zerolog.New(writer)
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
-		buf.Reset()
 		logBenchFn(logger)
 	}
 }
