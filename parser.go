@@ -98,7 +98,7 @@ func (p *parser) parseArray(depth int, buf []byte, initialPos int) (end int, err
 		return len(buf), parseErrorAt(len(buf), io.ErrUnexpectedEOF)
 	}
 	if b := buf[i]; b != '[' {
-		return i + 1, parseErrorAt(i, fmt.Errorf("array: unexpected %s", string(rune(b))))
+		return i + 1, parseErrorAt(i, fmt.Errorf("array: unexpected 0x%X", b))
 	}
 	i++
 	numValues := 0
@@ -137,7 +137,7 @@ func (p *parser) parseArrayComma(buf []byte, initialPos int) (end int, err error
 		return i + 1, errEndArray
 	}
 	if b != ',' {
-		return i + 1, parseErrorAt(i, fmt.Errorf("array comma: unexpected %s", string(rune(b))))
+		return i + 1, parseErrorAt(i, fmt.Errorf("array comma: unexpected 0x%X", b))
 	}
 	return i + 1, nil
 }
@@ -149,7 +149,7 @@ func (p *parser) parseBeginObject(buf []byte, initialPos int) (end int, err erro
 	}
 	b := buf[i]
 	if b != '{' {
-		return i + 1, parseErrorAt(i, fmt.Errorf("object: unexpected: %s", string(rune(b))))
+		return i + 1, parseErrorAt(i, fmt.Errorf("object: unexpected: 0x%X", b))
 	}
 	return i + 1, nil
 }
@@ -161,7 +161,7 @@ func (p *parser) parseColon(buf []byte, initialPos int) (end int, err error) {
 	}
 	b := buf[i]
 	if b != ':' {
-		return i + 1, parseErrorAt(i, fmt.Errorf("colon: unexpected %s", string(rune(b))))
+		return i + 1, parseErrorAt(i, fmt.Errorf("colon: unexpected 0x%X", b))
 	}
 	return i + 1, nil
 }
@@ -175,7 +175,7 @@ func (p *parser) parseFalse(buf []byte, initialPos int) (end int, err error) {
 		}
 		b := buf[i]
 		if b != raw[r] {
-			return i + 1, parseErrorAt(initialPos+r, fmt.Errorf("false: unexpected %s", string(rune(b))))
+			return i + 1, parseErrorAt(initialPos+r, fmt.Errorf("false: unexpected 0x%X", b))
 		}
 	}
 	return initialPos + len(raw), nil
@@ -190,7 +190,7 @@ func (p *parser) parseNull(buf []byte, initialPos int) (end int, err error) {
 		}
 		b := buf[i]
 		if b != raw[r] {
-			return i + 1, parseErrorAt(initialPos+r, fmt.Errorf("null: unexpected %s", string(rune(b))))
+			return i + 1, parseErrorAt(initialPos+r, fmt.Errorf("null: unexpected 0x%X", b))
 		}
 	}
 	return initialPos + len(raw), nil
@@ -239,7 +239,7 @@ func (p *parser) parseNumberExp(buf []byte, initialPos int) (end int, err error)
 		return len(buf), parseErrorAt(len(buf), fmt.Errorf("number exp: %w", io.ErrUnexpectedEOF))
 	}
 	if digits == 0 {
-		return i, parseErrorAt(i, fmt.Errorf("number exp: unexpected %s", string(rune(buf[i]))))
+		return i, parseErrorAt(i, fmt.Errorf("number exp: unexpected 0x%X", buf[i]))
 	}
 	return i, nil
 }
@@ -262,7 +262,7 @@ func (p *parser) parseNumberFrac(buf []byte, initialPos int) (end int, err error
 		return len(buf), parseErrorAt(len(buf), fmt.Errorf("number frac: %w", io.ErrUnexpectedEOF))
 	}
 	if digits == 0 {
-		return i, parseErrorAt(i, fmt.Errorf("number frac: unexpected %s", string(rune(buf[i]))))
+		return i, parseErrorAt(i, fmt.Errorf("number frac: unexpected 0x%X", buf[i]))
 	}
 	return i, nil
 }
@@ -281,7 +281,7 @@ func (p *parser) parseNumberInt(buf []byte, initialPos int) (end int, err error)
 		return len(buf), parseErrorAt(len(buf), fmt.Errorf("number int: %w", io.ErrUnexpectedEOF))
 	}
 	if digits == 0 {
-		return i, parseErrorAt(i, fmt.Errorf("number int: unexpected %s", string(rune(buf[i]))))
+		return i, parseErrorAt(i, fmt.Errorf("number int: unexpected 0x%X", buf[i]))
 	}
 	return i, nil
 }
@@ -306,7 +306,7 @@ func (p *parser) parseObject(depth int, buf []byte, initialPos int) (end int, er
 		return len(buf), parseErrorAt(len(buf), io.ErrUnexpectedEOF)
 	}
 	if b := buf[i]; b != '{' {
-		return i + 1, parseErrorAt(i, fmt.Errorf("object: unexpected %s", string(rune(b))))
+		return i + 1, parseErrorAt(i, fmt.Errorf("object: unexpected 0x%X", b))
 	}
 	i++
 	numPairs := 0
@@ -355,7 +355,7 @@ func (p *parser) parseObjectComma(buf []byte, initialPos int) (end int, err erro
 		return i + 1, errEndObject
 	}
 	if b != ',' {
-		return i + 1, parseErrorAt(i, fmt.Errorf("object comma: unexpected %s", string(rune(b))))
+		return i + 1, parseErrorAt(i, fmt.Errorf("object comma: unexpected 0x%X", b))
 	}
 	return i + 1, nil
 }
@@ -367,7 +367,7 @@ func (p *parser) parseString(buf []byte, initialPos int) (end int, err error) {
 	}
 	b := buf[i]
 	if b != '"' {
-		return i + 1, parseErrorAt(i, fmt.Errorf("string: unexpected %s", string(rune(b))))
+		return i + 1, parseErrorAt(i, fmt.Errorf("string: unexpected 0x%X", b))
 	}
 	i++
 	escapeNext := false
@@ -402,7 +402,7 @@ func (p *parser) parseTrue(buf []byte, initialPos int) (end int, err error) {
 		}
 		b := buf[i]
 		if b != raw[r] {
-			return i + 1, parseErrorAt(initialPos+r, fmt.Errorf("true: unexpected %s", string(rune(b))))
+			return i + 1, parseErrorAt(initialPos+r, fmt.Errorf("true: unexpected 0x%X", b))
 		}
 	}
 	return initialPos + len(raw), nil
@@ -430,7 +430,7 @@ func (p *parser) parseValue(depth int, buf []byte, initialPos int) (end int, err
 	case b == '{':
 		return p.parseObject(depth+1, buf, i)
 	default:
-		return i + 1, parseErrorAt(i, fmt.Errorf("value: unexpected: %s", string(rune(b))))
+		return i + 1, parseErrorAt(i, fmt.Errorf("value: unexpected: 0x%X", b))
 	}
 }
 
