@@ -73,7 +73,7 @@ func (p *parser) parse(buf []byte) (pairs []kv, n int, err error) {
 		if keyString, ok := jsonconv.Unquote(pair.keyBytes); ok {
 			pair.keyUnquoted = keyString
 		} else {
-			return pairs, n, parseErrorAt(keyStart, errors.New("parse: could not unquote key"))
+			return pairs, n, parseErrorAt(keyStart, fmt.Errorf("parse: could not unquote key [%d:%d]", keyStart, n))
 		}
 		n, err = p.parseColon(buf, skipWhitespace(buf, n))
 		if err != nil {
