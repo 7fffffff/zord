@@ -44,10 +44,13 @@ func (p *parser) depthLimitReached(depth int) bool {
 func (p *parser) parse(buf []byte) (pairs []kv, n int, err error) {
 	pairs = make([]kv, 0, 16)
 	n = skipWhitespace(buf, 0)
-	n, err = p.parseBeginObject(buf, n)
-	if err != nil {
-		return pairs, n, err
+	if n >= len(buf) {
+		return pairs, len(buf), parseErrorAt(len(buf), io.ErrUnexpectedEOF)
 	}
+	if b := buf[n]; b != '{' {
+		return pairs, n + 1, parseErrorAt(n, fmt.Errorf("object: unexpected: 0x%X", b))
+	}
+	n++
 	for {
 		pair := kv{}
 		n = skipWhitespace(buf, n)
@@ -139,18 +142,6 @@ func (p *parser) parseArrayComma(buf []byte, initialPos int) (end int, err error
 	}
 	if b != ',' {
 		return i + 1, parseErrorAt(i, fmt.Errorf("array comma: unexpected 0x%X", b))
-	}
-	return i + 1, nil
-}
-
-func (p *parser) parseBeginObject(buf []byte, initialPos int) (end int, err error) {
-	i := initialPos
-	if i >= len(buf) {
-		return len(buf), parseErrorAt(len(buf), io.ErrUnexpectedEOF)
-	}
-	b := buf[i]
-	if b != '{' {
-		return i + 1, parseErrorAt(i, fmt.Errorf("object: unexpected: 0x%X", b))
 	}
 	return i + 1, nil
 }
