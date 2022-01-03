@@ -34,7 +34,9 @@ func parseErrorAt(pos int, err error) errorAt {
 		return nil
 	}
 	if errp, ok := err.(errorAt); ok {
-		return errp
+		if errp.Pos() == pos {
+			return errp
+		}
 	}
 	return &errAt{
 		err: err,

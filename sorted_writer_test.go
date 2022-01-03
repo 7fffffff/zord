@@ -15,7 +15,7 @@ type sortedWriterTest struct {
 var sortedWriterTests = []sortedWriterTest{
 	{
 		desc:      "empty object",
-		obj:       []byte(`{}`),
+		obj:       []byte(`{  }`),
 		firstKeys: []string{`aaa`},
 		expected:  []byte(`{}`),
 	},
@@ -23,12 +23,6 @@ var sortedWriterTests = []sortedWriterTest{
 		desc:     "no changes",
 		obj:      []byte(`{"aaa":"foo", "bbb":"bar", "ccc":"qux"}`),
 		expected: []byte(`{"aaa":"foo", "bbb":"bar", "ccc":"qux"}`),
-	},
-	{
-		desc:      "as-is",
-		obj:       []byte(`{"aaa":"foo", "bbb":"bar", "ccc":"qux"`),
-		firstKeys: []string{`bbb`},
-		expected:  []byte(`{"aaa":"foo", "bbb":"bar", "ccc":"qux"`),
 	},
 	{
 		desc:      "string values",
@@ -56,9 +50,21 @@ var sortedWriterTests = []sortedWriterTest{
 	},
 	{
 		desc:      "object",
-		obj:       []byte(`{"aaa":"foo", "ddd":{"xxx":1,"yyy":2,"zzz":3}, "bbb":"bar", "ccc":"qux"}`),
+		obj:       []byte(`{"aaa":"foo", "":{"xxx":1,"yyy":2,"zzz":3}, "bbb":["bar", null], "ccc":"qux"}`),
 		firstKeys: []string{`ccc`},
-		expected:  []byte(`{"ccc":"qux","aaa":"foo","bbb":"bar","ddd":{"xxx":1,"yyy":2,"zzz":3}}`),
+		expected:  []byte(`{"ccc":"qux","":{"xxx":1,"yyy":2,"zzz":3},"aaa":"foo","bbb":["bar", null]}`),
+	},
+	{
+		desc:      "as-is #1",
+		obj:       []byte(`{"aaa":"foo", "bbb":"bar", "ccc":"qux"`),
+		firstKeys: []string{`bbb`},
+		expected:  []byte(`{"aaa":"foo", "bbb":"bar", "ccc":"qux"`),
+	},
+	{
+		desc:      "as-is #2",
+		obj:       []byte(`{"aaa":"foo", "bbb":"bar", "ccc":{"ddd": 3}}, "eee": 4}`),
+		firstKeys: []string{`bbb`},
+		expected:  []byte(`{"aaa":"foo", "bbb":"bar", "ccc":{"ddd": 3}}, "eee": 4}`),
 	},
 }
 

@@ -17,8 +17,8 @@ type reorderTest struct {
 
 func errorAtFunc(pos int) func(error) bool {
 	return func(err error) bool {
-		if err, ok := err.(errorAt); ok {
-			if err.Pos() == pos {
+		if parseErr, ok := err.(errorAt); ok {
+			if parseErr.Pos() == pos {
 				return true
 			}
 		}
@@ -40,11 +40,11 @@ func errorIsAtFunc(expected error, pos int) func(error) bool {
 		if err == nil || expected == nil {
 			return false
 		}
-		if err, ok := err.(errorAt); ok {
-			if !errors.Is(err, expected) {
+		if parseErr, ok := err.(errorAt); ok {
+			if !errors.Is(parseErr, expected) {
 				return false
 			}
-			if err.Pos() == pos {
+			if parseErr.Pos() == pos {
 				return true
 			}
 		}
@@ -60,8 +60,14 @@ var reorderTests = []reorderTest{
 		expectedErr: errorIsFunc(io.ErrUnexpectedEOF),
 	},
 	{
-		desc:      "empty object",
+		desc:      "empty object #1",
 		obj:       []byte(`{}`),
+		firstKeys: []string{`aaa`},
+		expected:  []byte(`{}`),
+	},
+	{
+		desc:      "empty object #2",
+		obj:       []byte(`{   }`),
 		firstKeys: []string{`aaa`},
 		expected:  []byte(`{}`),
 	},
@@ -79,7 +85,7 @@ var reorderTests = []reorderTest{
 	},
 	{
 		desc:      "string values",
-		obj:       []byte(`{"aaa":"foo", "bbb":"bar", "ccc":"qux", "":"",  "<":""}`),
+		obj:       []byte(`{"aaa":"foo", "bbb":"bar", "ccc"   :   "qux", "":"",  "<":""}`),
 		firstKeys: []string{`ddd`, `bbb`, ``, `bbb`},
 		expected:  []byte(`{"bbb":"bar","":"","aaa":"foo","ccc":"qux","<":""}`),
 	},
@@ -103,15 +109,15 @@ var reorderTests = []reorderTest{
 	},
 	{
 		desc:      "number values",
-		obj:       []byte(`{"aaa":0.1, "bbb":0, "ccc":-123.333, "ddd": 100}`),
-		firstKeys: []string{`ccc`},
-		expected:  []byte(`{"ccc":-123.333,"aaa":0.1,"bbb":0,"ddd":100}`),
+		obj:       []byte(`{"aaa":0.1, "bbb":0, "ccc":-123.456789, "ddd": 100, "   ": -0}`),
+		firstKeys: []string{`ccc`, `   `},
+		expected:  []byte(`{"ccc":-123.456789,"   ":-0,"aaa":0.1,"bbb":0,"ddd":100}`),
 	},
 	{
 		desc:      "number values with exponent",
-		obj:       []byte(`{"aaa":0e10, "bbb":"bar", "ccc":1e-005, "ddd":1E+005}`),
+		obj:       []byte(`{"aaa":0e10, "bbb":4.9406564584124654417656879286822137236505980e-324, "ccc":1e-005 , "ddd":1E+005, "eee":0E0}`),
 		firstKeys: []string{`ccc`, `ddd`},
-		expected:  []byte(`{"ccc":1e-005,"ddd":1E+005,"aaa":0e10,"bbb":"bar"}`),
+		expected:  []byte(`{"ccc":1e-005,"ddd":1E+005,"aaa":0e10,"bbb":4.9406564584124654417656879286822137236505980e-324,"eee":0E0}`),
 	},
 	{
 		desc:      "bool & null values",
@@ -120,16 +126,16 @@ var reorderTests = []reorderTest{
 		expected:  []byte(`{"ccc":false,"aaa":null,"bbb":"","ddd":true}`),
 	},
 	{
-		desc:      "extra whitespace",
-		obj:       []byte(`{ "bbb":"bar", "aaa"  :  "foo", "ccc":"qux" , "aaa":true}`),
+		desc:      "empty array #1",
+		obj:       []byte(`{"bbb":"bar", "aaa"  :  [], "ccc":"qux", "aaa":true}`),
 		firstKeys: []string{`aaa`},
-		expected:  []byte(`{"aaa":"foo","aaa":true,"bbb":"bar","ccc":"qux"}`),
+		expected:  []byte(`{"aaa":[],"aaa":true,"bbb":"bar","ccc":"qux"}`),
 	},
 	{
-		desc:      "empty array",
-		obj:       []byte(`{"bbb":"bar", "aaa"  :  [ ], "ccc":"qux", "aaa":true}`),
+		desc:      "empty array #2",
+		obj:       []byte(`{"bbb":"bar", "aaa"  :  [   ], "ccc":"qux", "aaa":true}`),
 		firstKeys: []string{`aaa`},
-		expected:  []byte(`{"aaa":[ ],"aaa":true,"bbb":"bar","ccc":"qux"}`),
+		expected:  []byte(`{"aaa":[   ],"aaa":true,"bbb":"bar","ccc":"qux"}`),
 	},
 	{
 		desc:      "single element array",
@@ -150,22 +156,28 @@ var reorderTests = []reorderTest{
 		expected:  []byte(`{"aaa":[[[1], [2, 3]], 4, [[[]] ]],"aaa":true,"bbb":"bar","ccc":"qux"}`),
 	},
 	{
-		desc:      "empty nested object",
+		desc:      "empty nested object #1",
 		obj:       []byte(`{"bbb":"bar", "aaa"  :  {}, "ccc":"qux", "aaa":true}`),
 		firstKeys: []string{`aaa`},
 		expected:  []byte(`{"aaa":{},"aaa":true,"bbb":"bar","ccc":"qux"}`),
 	},
 	{
-		desc:      "nested object with one property",
-		obj:       []byte(`{"bbb":"bar", "aaa"  :  { "qqq":111}, "ccc":"qux", "aaa":true}`),
+		desc:      "empty nested object #2",
+		obj:       []byte(`{"bbb":"bar", "aaa"  :  {   }, "ccc":"qux", "aaa":true}`),
 		firstKeys: []string{`aaa`},
-		expected:  []byte(`{"aaa":{ "qqq":111},"aaa":true,"bbb":"bar","ccc":"qux"}`),
+		expected:  []byte(`{"aaa":{   },"aaa":true,"bbb":"bar","ccc":"qux"}`),
+	},
+	{
+		desc:      "nested object with one property",
+		obj:       []byte(`{"bbb":["bar"], "aaa"  :  { "qqq":111}, "ccc":"qux", "aaa":true}`),
+		firstKeys: []string{`aaa`},
+		expected:  []byte(`{"aaa":{ "qqq":111},"aaa":true,"bbb":["bar"],"ccc":"qux"}`),
 	},
 	{
 		desc:      "nested object with multiple properties",
-		obj:       []byte(`{"bbb":"bar", "aaa"  :  {"qqq":111,"www": false}, "ccc":"qux", "aaa":true}`),
+		obj:       []byte(`{"bbb":["bar"], "aaa"  :  {"qqq":111,"rrr":"sss" ,"www": [{"x":[1, false]}]}, "ccc":"qux", "aaa":true}`),
 		firstKeys: []string{`aaa`},
-		expected:  []byte(`{"aaa":{"qqq":111,"www": false},"aaa":true,"bbb":"bar","ccc":"qux"}`),
+		expected:  []byte(`{"aaa":{"qqq":111,"rrr":"sss" ,"www": [{"x":[1, false]}]},"aaa":true,"bbb":["bar"],"ccc":"qux"}`),
 	},
 	{
 		desc:        "incomplete literal #1",
@@ -199,7 +211,7 @@ var reorderTests = []reorderTest{
 	},
 	{
 		desc:        "invalid number #3",
-		obj:         []byte(`{"aaa":"foo", "bbb":"bar", "ccc":1x1}`),
+		obj:         []byte(`{"aaa":"foo", "bbb":"bar", "ccc":0xAF}`),
 		firstKeys:   []string{`bbb`},
 		expectedErr: errorAtFunc(34),
 	},
@@ -210,6 +222,42 @@ var reorderTests = []reorderTest{
 		expectedErr: errorAtFunc(35),
 	},
 	{
+		desc:        "invalid number #5",
+		obj:         []byte(`{"aaa":"foo", "bbb":"bar", "ccc":1.e1}`),
+		firstKeys:   []string{`bbb`},
+		expectedErr: errorAtFunc(35),
+	},
+	{
+		desc:        "invalid number #6",
+		obj:         []byte(`{"aaa":"foo", "bbb":"bar", "ccc":.1}`),
+		firstKeys:   []string{`bbb`},
+		expectedErr: errorAtFunc(33),
+	},
+	{
+		desc:        "invalid number #7",
+		obj:         []byte(`{"aaa":"foo", "bbb":"bar", "ccc":0E}`),
+		firstKeys:   []string{`bbb`},
+		expectedErr: errorAtFunc(35),
+	},
+	{
+		desc:        "invalid number #8",
+		obj:         []byte(`{"aaa":"foo", "bbb":"bar", "ccc":0eE2}`),
+		firstKeys:   []string{`bbb`},
+		expectedErr: errorAtFunc(35),
+	},
+	{
+		desc:        "invalid number #9",
+		obj:         []byte(`{"aaa":"foo", "bbb":"bar", "ccc":-012}`),
+		firstKeys:   []string{`bbb`},
+		expectedErr: errorAtFunc(35),
+	},
+	{
+		desc:        "invalid number #10",
+		obj:         []byte(`{"aaa":"foo", "bbb":"bar", "ccc":-}`),
+		firstKeys:   []string{`bbb`},
+		expectedErr: errorAtFunc(34),
+	},
+	{
 		desc:        "invalid array #1",
 		obj:         []byte(`{"bbb":"bar", "aaa"  :  [1:2], "ccc":"qux", "aaa":true}`),
 		firstKeys:   []string{`aaa`},
@@ -218,6 +266,12 @@ var reorderTests = []reorderTest{
 	{
 		desc:        "invalid array #2",
 		obj:         []byte(`{"bbb":"bar", "aaa"  :  [a], "ccc":"qux", "aaa":true}`),
+		firstKeys:   []string{`aaa`},
+		expectedErr: errorAtFunc(25),
+	},
+	{
+		desc:        "invalid array #3",
+		obj:         []byte(`{"bbb":"bar", "aaa"  :  [,], "ccc":"qux", "aaa":true}`),
 		firstKeys:   []string{`aaa`},
 		expectedErr: errorAtFunc(25),
 	},
@@ -238,6 +292,48 @@ var reorderTests = []reorderTest{
 		obj:         []byte(`{"bbb":"bar", "aaa"  :  { "qqq",}, "ccc":"qux", "aaa":true}`),
 		firstKeys:   []string{`aaa`},
 		expectedErr: errorAtFunc(31),
+	},
+	{
+		desc:        "invalid object #3",
+		obj:         []byte(`{"bbb":"bar", "aaa"  :  { "qqq" }, "ccc":"qux", "aaa":true}`),
+		firstKeys:   []string{`aaa`},
+		expectedErr: errorAtFunc(32),
+	},
+	{
+		desc:        "invalid object #4",
+		obj:         []byte(`{"bbb":"bar", "aaa"  :  { "qqq"::1}, "ccc":"qux", "aaa":true}`),
+		firstKeys:   []string{`aaa`},
+		expectedErr: errorAtFunc(32),
+	},
+	{
+		desc:        "invalid object #5",
+		obj:         []byte(`{"bbb":"bar", "aaa"  :  { : 1}, ccc:"qux", "aaa":true}`),
+		firstKeys:   []string{`aaa`},
+		expectedErr: errorAtFunc(26),
+	},
+	{
+		desc:        "invalid object #6",
+		obj:         []byte(`{"bbb":"bar", "aaa"  :  { "qqq": 1}, ccc:"qux", "aaa":true}`),
+		firstKeys:   []string{`aaa`},
+		expectedErr: errorAtFunc(37),
+	},
+	{
+		desc:        "invalid object #7",
+		obj:         []byte(`{"bbb":"bar", "aaa"  :  { "qqq": 1}, 'ccc':"qux", "aaa":true}`),
+		firstKeys:   []string{`aaa`},
+		expectedErr: errorAtFunc(37),
+	},
+	{
+		desc:        "invalid object #8",
+		obj:         []byte(`{"bbb":"bar", "aaa"  :  { "qqq": 1}, "ccc"":"qux", "aaa":true}`),
+		firstKeys:   []string{`aaa`},
+		expectedErr: errorAtFunc(42),
+	},
+	{
+		desc:        "invalid object #9",
+		obj:         []byte(`{"bbb":"bar", "aaa"  :  { "qqq": 1}, :"qux", "aaa":true}`),
+		firstKeys:   []string{`aaa`},
+		expectedErr: errorAtFunc(37),
 	},
 	{
 		desc:      "trailing comma #1",

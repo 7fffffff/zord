@@ -36,8 +36,9 @@ func (p *parser) depthLimitReached(depth int) bool {
 	return depth >= maxDepth || depth < 0
 }
 
-// parse expects buf to contain a valid JSON object and extracts the top level
-// key-value pairs in the order they appear. parse does not deduplicate keys.
+// parse expects buf to contain a valid utf-8 encoded JSON object and
+// extracts the top level key-value pairs in the order they appear. parse
+// does not deduplicate keys.
 //
 // parse returns the key-value pairs and the number of bytes read from buf
 func (p *parser) parse(buf []byte) (pairs []kv, n int, err error) {

@@ -33,10 +33,8 @@ func (w sortedWriter) Write(event []byte) (n int, err error) {
 	}
 	var pairs eventData
 	var buf = bytes.NewBuffer(make([]byte, 0, len(event)))
-	var dec = json.NewDecoder(bytes.NewReader(event))
-	dec.UseNumber()
-	err = dec.Decode(&pairs)
-	n = int(dec.InputOffset())
+	err = json.Unmarshal(event, &pairs)
+	n = len(event)
 	if err != nil {
 		// If there's an error in the reordering process, it's more
 		// important that the log data get written. So write the event

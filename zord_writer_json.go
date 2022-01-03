@@ -16,6 +16,15 @@ func (z ZordWriter) Write(event []byte) (n int, err error) {
 		// data as-is.
 		return z.Output.Write(event)
 	}
+	if n < len(event) {
+		n = skipWhitespace(event, n)
+		if n < len(event) {
+			// Parsing succeeded but there's unconsumed, non-whitespace
+			// bytes after the end of the object. Give up and write the
+			// event as-is.
+			return z.Output.Write(event)
+		}
+	}
 	_, err = z.Output.Write(obj)
 	if err != nil {
 		return n, err

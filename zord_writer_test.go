@@ -15,7 +15,7 @@ type zordWriterTest struct {
 var zordWriterTests = []zordWriterTest{
 	{
 		desc:      "empty object",
-		obj:       []byte(`{}`),
+		obj:       []byte(`{   }`),
 		firstKeys: []string{`aaa`},
 		expected:  []byte(`{}`),
 	},
@@ -25,12 +25,6 @@ var zordWriterTests = []zordWriterTest{
 		expected: []byte(`{"aaa":"foo", "bbb":"bar", "ccc":"qux"}`),
 	},
 	{
-		desc:      "as-is",
-		obj:       []byte(`{"aaa":"foo", "bbb":"bar", "ccc":"qux"`),
-		firstKeys: []string{`bbb`},
-		expected:  []byte(`{"aaa":"foo", "bbb":"bar", "ccc":"qux"`),
-	},
-	{
 		desc:      "string values",
 		obj:       []byte(`{"aaa":"foo", "bbb":"bar", "ccc":"qux", "ddd":"baz"}`),
 		firstKeys: []string{`bbb`, `ddd`},
@@ -38,7 +32,7 @@ var zordWriterTests = []zordWriterTest{
 	},
 	{
 		desc:      "preserve order",
-		obj:       []byte(`{"bbb":0, "aaa":"foo", "ddd": 222, "ccc":-123.333}`),
+		obj:       []byte(`  {"bbb":0, "aaa":"foo", "ddd": 222, "ccc":-123.333}  `),
 		firstKeys: []string{`ccc`},
 		expected:  []byte(`{"ccc":-123.333,"bbb":0,"aaa":"foo","ddd":222}`),
 	},
@@ -56,9 +50,21 @@ var zordWriterTests = []zordWriterTest{
 	},
 	{
 		desc:      "object",
-		obj:       []byte(`{"aaa":"foo", "ddd":{"xxx":1,"yyy":2,"zzz":3}, "bbb":"bar", "ccc":"qux"}`),
+		obj:       []byte(`{"aaa":"foo", "":{"xxx":1,"yyy":2,"zzz":3}, "bbb":["bar", null], "ccc":"qux"}`),
 		firstKeys: []string{`ccc`},
-		expected:  []byte(`{"ccc":"qux","aaa":"foo","ddd":{"xxx":1,"yyy":2,"zzz":3},"bbb":"bar"}`),
+		expected:  []byte(`{"ccc":"qux","aaa":"foo","":{"xxx":1,"yyy":2,"zzz":3},"bbb":["bar", null]}`),
+	},
+	{
+		desc:      "as-is #1",
+		obj:       []byte(`{"aaa":"foo", "bbb":"bar", "ccc":"qux"`),
+		firstKeys: []string{`bbb`},
+		expected:  []byte(`{"aaa":"foo", "bbb":"bar", "ccc":"qux"`),
+	},
+	{
+		desc:      "as-is #2",
+		obj:       []byte(`{"aaa":"foo", "bbb":"bar", "ccc":{"ddd": 3}}, "eee": 4}`),
+		firstKeys: []string{`bbb`},
+		expected:  []byte(`{"aaa":"foo", "bbb":"bar", "ccc":{"ddd": 3}}, "eee": 4}`),
 	},
 }
 
