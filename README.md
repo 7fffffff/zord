@@ -50,16 +50,26 @@ func main() {
 
 In development, log lines are a little easier to read when common fields like
 the timestamp are always in the same place. JSON objects are defined as
-unordered, so rearranging the key/value pairs should not change how the objects
-are interpreted.
+unordered sets of name/value pairs, so rearranging the pairs should not change
+how objects are interpreted by a downstream system.
 
-In production scenarios where zerolog's output is only consumed programatically, there's not much
-point in using ZordWriter.
+In production scenarios where log output is only ever read by other programs,
+there's not much point in using ZordWriter.
+
+## Duplicate Keys
+
+zerolog doesn't deduplicate keys and neither does ZordWriter. Duplicate keys
+will maintain their ordering relative to each other.
+
+## Binary Logs (CBOR)
+
+If compiled with the binary_log build tag, ZordWriter won't inspect or modify
+the bytes it's given.
 
 ## Efficiency
 
-ZordWriter parses and reassembles the event object, so there's inevitably
-some overhead compared using just zerolog.
+ZordWriter parses and reassembles the event object, so there's inevitably some
+overhead compared using just zerolog.
 
 ```
 Logging an event with 10 fields
@@ -68,10 +78,6 @@ BenchmarkZerologDefault-6          952431      1260 ns/op        0 B/op      0 a
 BenchmarkZerologConsoleWriter-6     44083     25790 ns/op     2487 B/op     88 allocs/op
 BenchmarkZordWriter-6              130533      9314 ns/op     3080 B/op     28 allocs/op
 ```
-
-## Duplicate Keys
-
-zerolog doesn't deduplicate keys and neither does ZordWriter.
 
 ## License
 
