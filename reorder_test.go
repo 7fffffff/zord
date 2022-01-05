@@ -72,10 +72,16 @@ var reorderTests = []reorderTest{
 		expected:  []byte(`{}`),
 	},
 	{
-		desc:        "objects only",
+		desc:        "objects only #1",
 		obj:         []byte(`    []`),
 		firstKeys:   []string{`aaa`},
 		expectedErr: errorAtFunc(4),
+	},
+	{
+		desc:        "objects only #2",
+		obj:         []byte(` 123 `),
+		firstKeys:   []string{`aaa`},
+		expectedErr: errorAtFunc(1),
 	},
 	{
 		desc:      "no changes",
@@ -352,6 +358,12 @@ var reorderTests = []reorderTest{
 		obj:       []byte(`{"aaa":"foo", "bbb":{"ddd": 0 , }, "ccc":"qux"}`),
 		firstKeys: []string{`bbb`},
 		expected:  []byte(`{"bbb":{"ddd": 0 , },"aaa":"foo","ccc":"qux"}`),
+	},
+	{
+		desc:        "no double trailing comma",
+		obj:         []byte(`{"aaa":"foo", "bbb":{"ddd": 0 ,, }, "ccc":"qux"}`),
+		firstKeys:   []string{`bbb`},
+		expectedErr: errorAtFunc(31),
 	},
 }
 

@@ -8,11 +8,10 @@ import (
 	"github.com/7fffffff/jsonconv"
 )
 
-const defaultMaxDepth int = 64
-
 var (
 	errEndArray  = errors.New("]")
 	errEndObject = errors.New("}")
+	errMaxDepth  = errors.New("exceeded max depth")
 )
 
 type kv struct {
@@ -25,11 +24,11 @@ type kv struct {
 // JSON objects, and even then, only about finding the positions of the top
 // level key-value pairs within.
 type parser struct {
-	maxDepth int // maximum nesting depth. If 0, defaultMaxDepth is used
+	MaxDepth int // maximum nesting depth. If 0, defaultMaxDepth is used
 }
 
 func (p *parser) depthLimitReached(depth int) bool {
-	maxDepth := p.maxDepth
+	maxDepth := p.MaxDepth
 	if maxDepth == 0 {
 		maxDepth = defaultMaxDepth
 	}
@@ -95,7 +94,7 @@ func (p *parser) parse(buf []byte) (pairs []kv, n int, err error) {
 
 func (p *parser) parseArray(depth int, buf []byte, initialPos int) (end int, err error) {
 	if p.depthLimitReached(depth) {
-		return initialPos, parseErrorAt(initialPos, errors.New("array: depth limit reached"))
+		return initialPos, parseErrorAt(initialPos, fmt.Errorf("array: %w", errMaxDepth))
 	}
 	i := initialPos
 	if i >= len(buf) {
@@ -291,7 +290,7 @@ func (p *parser) parseNumberMinus(buf []byte, initialPos int) (end int, err erro
 
 func (p *parser) parseObject(depth int, buf []byte, initialPos int) (end int, err error) {
 	if p.depthLimitReached(depth) {
-		return initialPos, parseErrorAt(initialPos, errors.New("object: depth limit reached"))
+		return initialPos, parseErrorAt(initialPos, fmt.Errorf("object: %w", errMaxDepth))
 	}
 	i := initialPos
 	if i >= len(buf) {

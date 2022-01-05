@@ -5,6 +5,9 @@ package zord
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"testing"
 )
 
@@ -13,30 +16,63 @@ func FuzzParser(f *testing.F) {
 		f.Add(test.obj)
 	}
 	f.Fuzz(func(t *testing.T, obj []byte) {
-		parser := &parser{}
-		pairs1, _, err := parser.parse(obj)
+		var fields eventData
+		stdlibErr := json.Unmarshal(obj, &fields)
+		p := parser{}
+		kv1, _, err := p.parse(obj)
 		if err != nil {
+			if stdlibErr != nil {
+				// if the stdlib parser also didn't like it, skip it
+				t.Skip()
+			}
+			// as of go 1.15 the max nesting depth of the stdlib parser is 10000:
+			// https://github.com/golang/go/commit/84afaa9e9491d76ea43d7125b336030a0a2a902d
+			// so it will accept objects that the zord parser won't. if obj
+			// causes a depth limit error, ignore it
+			if errors.Is(err, errMaxDepth) {
+				t.Skip()
+			} else {
+				t.Fatal(err)
+			}
+		}
+		// the zord parser currently accepts inputs the stdlib rejects, so
+		// this check will definitely fail at some point
+		if stdlibErr != nil {
+			//t.Fatal(errors.New("accepted invalid JSON"))
 			t.Skip()
 		}
-		pairsWritten := 0
-		dest := make([]byte, 0, len(obj))
-		dest = append(dest, '{')
-		for _, pair := range pairs1 {
-			if pairsWritten > 0 {
-				dest = append(dest, ',')
+		missingKeys := map[string]struct{}{}
+		for key, _ := range fields {
+			missingKeys[key] = struct{}{}
+		}
+		for _, pair := range kv1 {
+			if _, ok := fields[pair.keyUnquoted]; !ok {
+				t.Fatal(errors.New("unexpected key"))
 			}
-			dest = append(dest, pair.keyBytes...)
-			dest = append(dest, ':')
-			dest = append(dest, pair.valueBytes...)
+			delete(missingKeys, pair.keyUnquoted)
+		}
+		if len(missingKeys) > 0 {
+			t.Fatal(fmt.Errorf("missing keys: %d", len(missingKeys)))
+		}
+		pairsWritten := 0
+		buf := make([]byte, 0, len(obj))
+		buf = append(buf, '{')
+		for _, pair := range kv1 {
+			if pairsWritten > 0 {
+				buf = append(buf, ',')
+			}
+			buf = append(buf, pair.keyBytes...)
+			buf = append(buf, ':')
+			buf = append(buf, pair.valueBytes...)
 			pairsWritten++
 		}
-		dest = append(dest, '}')
-		pairs2, _, err := parser.parse(dest)
+		buf = append(buf, '}')
+		kv2, _, err := p.parse(buf)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !samePairs(pairs1, pairs2) {
-			t.Fatalf("roundtrip error")
+		if !samePairs(kv1, kv2) {
+			t.Fatal(errors.New("parser roundtrip error"))
 		}
 	})
 }
