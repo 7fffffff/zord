@@ -363,21 +363,40 @@ func (p *parser) parseString(buf []byte, initialPos int) (end int, err error) {
 	i++
 	escapeNext := false
 	for i < len(buf) {
-		b := buf[i]
+		b = buf[i]
+		if escapeNext {
+			escapeNext = false
+			switch b {
+			case '"', '\\', '/', 'b', 'f', 'n', 'r', 't':
+				i++
+			case 'u':
+				i++
+				h := 0
+				for i < len(buf) {
+					b = buf[i]
+					if !hexDigits[b] {
+						return i + 1, parseErrorAt(i, fmt.Errorf("string: unexpected 0x%X", b))
+					}
+					h++
+					i++
+					if h == 4 {
+						break
+					}
+				}
+			default:
+				return i + 1, parseErrorAt(i, fmt.Errorf("string: unexpected 0x%X", b))
+			}
+			continue
+		}
 		switch b {
-		case '\\':
-			if escapeNext {
-				escapeNext = false
-			} else {
-				escapeNext = true
-			}
 		case '"':
-			if !escapeNext {
-				return i + 1, nil
-			}
-			escapeNext = false
+			return i + 1, nil
+		case '\\':
+			escapeNext = true
 		default:
-			escapeNext = false
+			if b < ' ' {
+				return i + 1, parseErrorAt(i, fmt.Errorf("string: unexpected 0x%X", b))
+			}
 		}
 		i++
 	}
@@ -437,11 +456,35 @@ var whitespace = [256]bool{
 func skipWhitespace(buf []byte, initialPos int) (pos int) {
 	pos = initialPos
 	for pos < len(buf) {
-		if c := buf[pos]; whitespace[c] {
-			pos++
-			continue
+		if c := buf[pos]; !whitespace[c] {
+			break
 		}
-		break
+		pos++
 	}
 	return pos
+}
+
+var hexDigits = [256]bool{
+	'0': true,
+	'1': true,
+	'2': true,
+	'3': true,
+	'4': true,
+	'5': true,
+	'6': true,
+	'7': true,
+	'8': true,
+	'9': true,
+	'A': true,
+	'B': true,
+	'C': true,
+	'D': true,
+	'E': true,
+	'F': true,
+	'a': true,
+	'b': true,
+	'c': true,
+	'd': true,
+	'e': true,
+	'f': true,
 }

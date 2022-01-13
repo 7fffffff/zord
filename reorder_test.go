@@ -97,9 +97,9 @@ var reorderTests = []reorderTest{
 	},
 	{
 		desc:      "non ascii",
-		obj:       []byte(`{"aaa":"foo","bbb":"😎", "ccc":"qux"}`),
+		obj:       []byte(`{"aaa":"foo","bbb":"😎", "ccc":"¼"}`),
 		firstKeys: []string{`bbb`, `bbb`},
-		expected:  []byte(`{"bbb":"😎","aaa":"foo","ccc":"qux"}`),
+		expected:  []byte(`{"bbb":"😎","aaa":"foo","ccc":"¼"}`),
 	},
 	{
 		desc:      "preserve duplicate keys",
@@ -109,9 +109,9 @@ var reorderTests = []reorderTest{
 	},
 	{
 		desc:      "escaped strings",
-		obj:       []byte(`{"aaa":"\f\f\f", "b\\bb":"bar", "ccc":"qu\u005C\"x"}`),
+		obj:       []byte(`{"\"":"\\x","aaa":"\"\\\/\b\f\n\r\t", "b\\bb":"\uD834\uDD1E", "ccc":"qu\u005C\"\uffff"}`),
 		firstKeys: []string{`b\bb`},
-		expected:  []byte(`{"b\\bb":"bar","aaa":"\f\f\f","ccc":"qu\u005C\"x"}`),
+		expected:  []byte(`{"b\\bb":"\uD834\uDD1E","\"":"\\x","aaa":"\"\\\/\b\f\n\r\t","ccc":"qu\u005C\"\uffff"}`),
 	},
 	{
 		desc:      "number values",
@@ -151,9 +151,9 @@ var reorderTests = []reorderTest{
 	},
 	{
 		desc:      "mixed array",
-		obj:       []byte(`{"bbb":"bar", "aaa"  :  [1,2,"a" , 0.0,null], "ccc":"qux", "aaa":true}`),
+		obj:       []byte(`{"bbb":"bar", "aaa"  :  [1,2, "a" , 0.0,null], "ccc":"qux", "aaa":true}`),
 		firstKeys: []string{`aaa`},
-		expected:  []byte(`{"aaa":[1,2,"a" , 0.0,null],"aaa":true,"bbb":"bar","ccc":"qux"}`),
+		expected:  []byte(`{"aaa":[1,2, "a" , 0.0,null],"aaa":true,"bbb":"bar","ccc":"qux"}`),
 	},
 	{
 		desc:      "nested arrays",
@@ -187,9 +187,9 @@ var reorderTests = []reorderTest{
 	},
 	{
 		desc:        "incomplete literal #1",
-		obj:         []byte(`{"aaa":"foo", "bbb":"bar", "ccc":fal}`),
+		obj:         []byte(`{"aaa":"foo", "bbb":"bar", "ccc":fals}`),
 		firstKeys:   []string{`bbb`},
-		expectedErr: errorAtFunc(36),
+		expectedErr: errorAtFunc(37),
 	},
 	{
 		desc:        "incomplete literal #2",
@@ -199,9 +199,9 @@ var reorderTests = []reorderTest{
 	},
 	{
 		desc:        "incomplete literal #3",
-		obj:         []byte(`{"aaa":"foo", "bbb":"bar", "ccc":tru}`),
+		obj:         []byte(`{"aaa":"foo", "bbb":"bar", "ccc":tr}`),
 		firstKeys:   []string{`bbb`},
-		expectedErr: errorAtFunc(36),
+		expectedErr: errorAtFunc(35),
 	},
 	{
 		desc:        "invalid number #1",
@@ -262,6 +262,61 @@ var reorderTests = []reorderTest{
 		obj:         []byte(`{"aaa":"foo", "bbb":"bar", "ccc":-}`),
 		firstKeys:   []string{`bbb`},
 		expectedErr: errorAtFunc(34),
+	},
+	{
+		desc:        "invalid string #1",
+		obj:         []byte("{\"\":\"123\x19567\"}"),
+		firstKeys:   []string{`bbb`},
+		expectedErr: errorAtFunc(8),
+	},
+	{
+		desc:        "invalid string #2",
+		obj:         []byte(`{"":"1234567\"}`),
+		firstKeys:   []string{`bbb`},
+		expectedErr: errorAtFunc(15),
+	},
+	{
+		desc:        "invalid string #3",
+		obj:         []byte(`{"":"123\a567"}`),
+		firstKeys:   []string{`bbb`},
+		expectedErr: errorAtFunc(9),
+	},
+	{
+		desc:        "invalid string #4",
+		obj:         []byte(`{"":"123\u000Z567"}`),
+		firstKeys:   []string{`bbb`},
+		expectedErr: errorAtFunc(13),
+	},
+	{
+		desc:        "invalid string #5",
+		obj:         []byte(`{"":"123\u012"}`),
+		firstKeys:   []string{`bbb`},
+		expectedErr: errorAtFunc(13),
+	},
+	{
+		desc:        "invalid string #6",
+		obj:         []byte(`{"":"123\u"}`),
+		firstKeys:   []string{`bbb`},
+		expectedErr: errorAtFunc(10),
+	},
+	{
+		desc:        "invalid string #7",
+		obj:         []byte(`{"":"123\U0000"}`),
+		firstKeys:   []string{`bbb`},
+		expectedErr: errorAtFunc(9),
+	},
+	{
+		desc:        "invalid string #8",
+		obj:         []byte(`{"":"123\ "}`),
+		firstKeys:   []string{`bbb`},
+		expectedErr: errorAtFunc(9),
+	},
+	{
+		desc: "invalid string #9",
+		obj: []byte(`{"":"123
+"}`),
+		firstKeys:   []string{`bbb`},
+		expectedErr: errorAtFunc(8),
 	},
 	{
 		desc:        "invalid array #1",
@@ -340,6 +395,12 @@ var reorderTests = []reorderTest{
 		obj:         []byte(`{"bbb":"bar", "aaa"  :  { "qqq": 1}, :"qux", "aaa":true}`),
 		firstKeys:   []string{`aaa`},
 		expectedErr: errorAtFunc(37),
+	},
+	{
+		desc:        "invalid object #10",
+		obj:         []byte(`{"bbb":"bar", 'aaa'  :  { "qqq": 1}, "aaa":true}`),
+		firstKeys:   []string{`aaa`},
+		expectedErr: errorAtFunc(14),
 	},
 	{
 		desc:      "trailing comma #1",
