@@ -16,6 +16,10 @@ func FuzzParser(f *testing.F) {
 		f.Add(test.obj)
 	}
 	f.Fuzz(func(t *testing.T, obj []byte) {
+		// the parser only recognizes objects
+		if bytes.IndexByte(obj, '{') < 0 {
+			t.Skip()
+		}
 		var fields eventData
 		stdlibErr := json.Unmarshal(obj, &fields)
 		p := parser{}
