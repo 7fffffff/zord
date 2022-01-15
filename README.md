@@ -74,9 +74,9 @@ overhead compared using just zerolog.
 ```
 Logging an event with 10 fields
 Using zerolog v1.5.0, the minimum version for this package
-BenchmarkZerologDefault-6          952431      1260 ns/op        0 B/op      0 allocs/op
-BenchmarkZerologConsoleWriter-6     44083     25790 ns/op     2487 B/op     88 allocs/op
-BenchmarkZordWriter-6              130533      9314 ns/op     3080 B/op     28 allocs/op
+BenchmarkZerologDefault-12         1791386       659.0 ns/op      0 B/op      0 allocs/op
+BenchmarkZerologConsoleWriter-12     85569     13859 ns/op     2457 B/op     88 allocs/op
+BenchmarkZordWriter-12              333338      3575 ns/op     2120 B/op     24 allocs/op
 ```
 
 ## License
