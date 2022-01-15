@@ -12,18 +12,27 @@ import (
 )
 
 func FuzzParser(f *testing.F) {
+	for _, test := range reorderTests {
+		f.Add(test.obj)
+	}
 	for _, test := range zordWriterTests {
 		f.Add(test.obj)
 	}
 	f.Fuzz(func(t *testing.T, obj []byte) {
-		// the parser only recognizes objects
+		// the parser only works with objects
 		if bytes.IndexByte(obj, '{') < 0 {
 			t.Skip()
 		}
 		var fields eventData
 		stdlibErr := json.Unmarshal(obj, &fields)
 		p := parser{}
-		kv1, _, err := p.parse(obj)
+		kv1, n, err := p.parse(obj)
+		if err == nil {
+			n = skipWhitespace(obj, n)
+			if n < len(obj) {
+				err = errors.New("unconsumed input")
+			}
+		}
 		if err != nil {
 			if stdlibErr != nil {
 				// if the stdlib parser also didn't like it, skip it
@@ -39,11 +48,8 @@ func FuzzParser(f *testing.F) {
 				t.Fatal(err)
 			}
 		}
-		// the zord parser currently accepts inputs the stdlib rejects, so
-		// this check will definitely fail at some point
 		if stdlibErr != nil {
-			//t.Fatal(errors.New("accepted invalid JSON"))
-			t.Skip()
+			t.Fatal(errors.New("accepted invalid JSON"))
 		}
 		missingKeys := map[string]struct{}{}
 		for key, _ := range fields {

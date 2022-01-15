@@ -403,28 +403,25 @@ var reorderTests = []reorderTest{
 		expectedErr: errorAtFunc(14),
 	},
 	{
-		desc:      "trailing comma #1",
-		obj:       []byte(`{"aaa":"foo", "bbb":"bar", "ccc":"qux",}`),
-		firstKeys: []string{`bbb`},
-		expected:  []byte(`{"bbb":"bar","aaa":"foo","ccc":"qux"}`),
-	},
-	{
-		desc:      "trailing comma #2",
-		obj:       []byte(`{"aaa":"foo", "bbb":[ {"ddd": 1}, ], "ccc":"qux"}`),
-		firstKeys: []string{`bbb`},
-		expected:  []byte(`{"bbb":[ {"ddd": 1}, ],"aaa":"foo","ccc":"qux"}`),
-	},
-	{
-		desc:      "trailing comma #3",
-		obj:       []byte(`{"aaa":"foo", "bbb":{"ddd": 0 , }, "ccc":"qux"}`),
-		firstKeys: []string{`bbb`},
-		expected:  []byte(`{"bbb":{"ddd": 0 , },"aaa":"foo","ccc":"qux"}`),
-	},
-	{
-		desc:        "no double trailing comma",
-		obj:         []byte(`{"aaa":"foo", "bbb":{"ddd": 0 ,, }, "ccc":"qux"}`),
+		desc:        "no trailing comma #1",
+		obj:         []byte(`{"aaa":"foo", "bbb":"bar", "ccc":"qux",}`),
 		firstKeys:   []string{`bbb`},
-		expectedErr: errorAtFunc(31),
+		expectedErr: errorAtFunc(39),
+		expected:    []byte(`{"bbb":"bar","aaa":"foo","ccc":"qux"}`),
+	},
+	{
+		desc:        "no trailing comma #2",
+		obj:         []byte(`{"aaa":"foo", "bbb":[ {"ddd": 1}, ], "ccc":"qux"}`),
+		firstKeys:   []string{`bbb`},
+		expectedErr: errorAtFunc(34),
+		expected:    []byte(`{"bbb":[ {"ddd": 1}, ],"aaa":"foo","ccc":"qux"}`),
+	},
+	{
+		desc:        "no trailing comma #3",
+		obj:         []byte(`{"aaa":"foo", "bbb":{"ddd": 0 , }, "ccc":"qux"}`),
+		firstKeys:   []string{`bbb`},
+		expectedErr: errorAtFunc(32),
+		expected:    []byte(`{"bbb":{"ddd": 0 , },"aaa":"foo","ccc":"qux"}`),
 	},
 }
 

@@ -53,19 +53,19 @@ func (p *parser) parse(buf []byte) (pairs []kv, n int, err error) {
 	for {
 		pair := kv{}
 		n = skipWhitespace(buf, n)
-		// allow a trailing comma before the end of the object
-		if len(pairs) > 0 {
-			n, err = p.parseObjectComma(buf, n)
-			if err == errEndObject {
-				return pairs, n, nil
-			}
-			if err != nil {
-				return pairs, n, err
-			}
-			n = skipWhitespace(buf, n)
+		if n >= len(buf) {
+			return pairs, len(buf), parseErrorAt(n, fmt.Errorf("parse: %w", io.ErrUnexpectedEOF))
 		}
-		if n < len(buf) && buf[n] == '}' {
+		b := buf[n]
+		if b == '}' {
 			return pairs, n + 1, nil
+		}
+		if len(pairs) > 0 {
+			if b != ',' {
+				return pairs, n + 1, parseErrorAt(n, fmt.Errorf("parse: unexpected 0x%X", b))
+			}
+			n++
+			n = skipWhitespace(buf, n)
 		}
 		keyStart := n
 		n, err = p.parseString(buf, keyStart)
@@ -78,10 +78,15 @@ func (p *parser) parse(buf []byte) (pairs []kv, n int, err error) {
 		} else {
 			return pairs, n, parseErrorAt(keyStart, fmt.Errorf("parse: could not unquote key [%d:%d]", keyStart, n))
 		}
-		n, err = p.parseColon(buf, skipWhitespace(buf, n))
-		if err != nil {
-			return pairs, n, err
+		n = skipWhitespace(buf, n)
+		if n >= len(buf) {
+			return pairs, len(buf), parseErrorAt(n, fmt.Errorf("parse colon: %w", io.ErrUnexpectedEOF))
 		}
+		b = buf[n]
+		if b != ':' {
+			return pairs, n + 1, parseErrorAt(n, fmt.Errorf("parse colon: unexpected 0x%X", b))
+		}
+		n++
 		valueStart := skipWhitespace(buf, n)
 		n, err = p.parseValue(0, buf, valueStart)
 		if err != nil {
@@ -94,32 +99,33 @@ func (p *parser) parse(buf []byte) (pairs []kv, n int, err error) {
 
 func (p *parser) parseArray(depth int, buf []byte, initialPos int) (end int, err error) {
 	i := initialPos
-	if p.depthLimitReached(depth) {
-		return i + 1, parseErrorAt(i, fmt.Errorf("array: %w", errMaxDepth))
-	}
 	if i >= len(buf) {
 		return len(buf), parseErrorAt(i, fmt.Errorf("array: %w", io.ErrUnexpectedEOF))
 	}
-	if b := buf[i]; b != '[' {
+	if p.depthLimitReached(depth) {
+		return i + 1, parseErrorAt(i, fmt.Errorf("array: %w", errMaxDepth))
+	}
+	b := buf[i]
+	if b != '[' {
 		return i + 1, parseErrorAt(i, fmt.Errorf("array: unexpected 0x%X", b))
 	}
 	i++
 	numValues := 0
 	for {
 		i = skipWhitespace(buf, i)
-		// allow a trailing comma before the end of the array
-		if numValues > 0 {
-			i, err = p.parseArrayComma(buf, i)
-			if err == errEndArray {
-				return i, nil
-			}
-			if err != nil {
-				return i, err
-			}
-			i = skipWhitespace(buf, i)
+		if i >= len(buf) {
+			return len(buf), parseErrorAt(i, fmt.Errorf("array: %w", io.ErrUnexpectedEOF))
 		}
-		if i < len(buf) && buf[i] == ']' {
+		b = buf[i]
+		if b == ']' {
 			return i + 1, nil
+		}
+		if numValues > 0 {
+			if b != ',' {
+				return i + 1, parseErrorAt(i, fmt.Errorf("array: unexpected 0x%X", b))
+			}
+			i++
+			i = skipWhitespace(buf, i)
 		}
 		valueEnd, err := p.parseValue(depth, buf, i)
 		if err != nil {
@@ -128,33 +134,6 @@ func (p *parser) parseArray(depth int, buf []byte, initialPos int) (end int, err
 		i = valueEnd
 		numValues++
 	}
-}
-
-func (p *parser) parseArrayComma(buf []byte, initialPos int) (end int, err error) {
-	i := initialPos
-	if i >= len(buf) {
-		return len(buf), parseErrorAt(i, fmt.Errorf("array comma: %w", io.ErrUnexpectedEOF))
-	}
-	b := buf[i]
-	if b == ']' {
-		return i + 1, errEndArray
-	}
-	if b != ',' {
-		return i + 1, parseErrorAt(i, fmt.Errorf("array comma: unexpected 0x%X", b))
-	}
-	return i + 1, nil
-}
-
-func (p *parser) parseColon(buf []byte, initialPos int) (end int, err error) {
-	i := initialPos
-	if i >= len(buf) {
-		return len(buf), parseErrorAt(i, fmt.Errorf("colon: %w", io.ErrUnexpectedEOF))
-	}
-	b := buf[i]
-	if b != ':' {
-		return i + 1, parseErrorAt(i, fmt.Errorf("colon: unexpected 0x%X", b))
-	}
-	return i + 1, nil
 }
 
 func (p *parser) parseFalse(buf []byte, initialPos int) (end int, err error) {
@@ -275,42 +254,47 @@ NumberExp:
 
 func (p *parser) parseObject(depth int, buf []byte, initialPos int) (end int, err error) {
 	i := initialPos
-	if p.depthLimitReached(depth) {
-		return i + 1, parseErrorAt(i, fmt.Errorf("object: %w", errMaxDepth))
-	}
 	if i >= len(buf) {
 		return len(buf), parseErrorAt(i, fmt.Errorf("object: %w", io.ErrUnexpectedEOF))
 	}
-	if b := buf[i]; b != '{' {
+	if p.depthLimitReached(depth) {
+		return i + 1, parseErrorAt(i, fmt.Errorf("object: %w", errMaxDepth))
+	}
+	b := buf[i]
+	if b != '{' {
 		return i + 1, parseErrorAt(i, fmt.Errorf("object: unexpected 0x%X", b))
 	}
 	i++
 	numPairs := 0
 	for {
 		i = skipWhitespace(buf, i)
-		// allow a trailing comma before the end of the object
-		if numPairs > 0 {
-			i, err = p.parseObjectComma(buf, i)
-			if err == errEndObject {
-				return i, nil
-			}
-			if err != nil {
-				return i, err
-			}
-			i = skipWhitespace(buf, i)
+		if i >= len(buf) {
+			return len(buf), parseErrorAt(i, fmt.Errorf("object: %w", io.ErrUnexpectedEOF))
 		}
-		if i < len(buf) && buf[i] == '}' {
+		b = buf[i]
+		if b == '}' {
 			return i + 1, nil
+		}
+		if numPairs > 0 {
+			if b != ',' {
+				return i + 1, parseErrorAt(i, fmt.Errorf("object comma: unexpected 0x%X", b))
+			}
+			i++
+			i = skipWhitespace(buf, i)
 		}
 		keyEnd, err := p.parseString(buf, i)
 		if err != nil {
 			return keyEnd, err
 		}
 		i = skipWhitespace(buf, keyEnd)
-		i, err = p.parseColon(buf, i)
-		if err != nil {
-			return i, err
+		if i >= len(buf) {
+			return len(buf), parseErrorAt(i, fmt.Errorf("object colon: %w", io.ErrUnexpectedEOF))
 		}
+		b = buf[i]
+		if b != ':' {
+			return i + 1, parseErrorAt(i, fmt.Errorf("object colon: unexpected 0x%X", b))
+		}
+		i++
 		i = skipWhitespace(buf, i)
 		valueEnd, err := p.parseValue(depth, buf, i)
 		if err != nil {
@@ -319,21 +303,6 @@ func (p *parser) parseObject(depth int, buf []byte, initialPos int) (end int, er
 		i = valueEnd
 		numPairs++
 	}
-}
-
-func (p *parser) parseObjectComma(buf []byte, initialPos int) (end int, err error) {
-	i := initialPos
-	if i >= len(buf) {
-		return len(buf), parseErrorAt(i, fmt.Errorf("object comma: %w", io.ErrUnexpectedEOF))
-	}
-	b := buf[i]
-	if b == '}' {
-		return i + 1, errEndObject
-	}
-	if b != ',' {
-		return i + 1, parseErrorAt(i, fmt.Errorf("object comma: unexpected 0x%X", b))
-	}
-	return i + 1, nil
 }
 
 func (p *parser) parseString(buf []byte, initialPos int) (end int, err error) {
