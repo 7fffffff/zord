@@ -56,7 +56,7 @@ func BenchmarkZordSortedWriter(b *testing.B) {
 }
 
 func BenchmarkZordWriter(b *testing.B) {
-	writer := NewZordWriter()
+	writer := NewWriter()
 	writer.Output = io.Discard
 	logger := zerolog.New(writer)
 	b.ReportAllocs()

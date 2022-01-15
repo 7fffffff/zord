@@ -7,7 +7,7 @@ import (
 	"fmt"
 )
 
-func (z ZordWriter) Write(event []byte) (n int, err error) {
+func (z Writer) Write(event []byte) (n int, err error) {
 	obj := make([]byte, 0, len(event))
 	obj, n, err = tryReorder(obj, event, z.FirstKeys)
 	if err != nil {

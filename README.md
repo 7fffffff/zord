@@ -23,7 +23,7 @@ func main() {
 	// => {"level":"debug","service":"greeter","a":1,"time":"2006-01-02T15:04:05-07:00","message":"hello, world!"}
 
 	// let's move some common fields to the front
-	writer := zord.NewZordWriter()
+	writer := zord.NewWriter()
 	//writer.Wr = os.Stderr // default
 	//writer.FirstKeys = zord.DefaultFirstKeys() // default
 	logger = zerolog.New(writer).With().Timestamp().Str("service", "greeter").Logger()
@@ -31,7 +31,7 @@ func main() {
 	// => {"time":"2006-01-02T15:04:05-07:00","level":"debug","message":"hello, world!","service":"greeter","a":1}
 
 	// let's make "service" appear after "level"
-	writer = zord.NewZordWriter()
+	writer = zord.NewWriter()
 	writer.FirstKeys = []string{
 		zerolog.TimestampFieldName,
 		zerolog.LevelFieldName,
@@ -54,21 +54,21 @@ unordered sets of name/value pairs, so rearranging the pairs should not change
 how objects are interpreted by a downstream system.
 
 In production scenarios where log output is only ever read by other programs,
-there's not much point in using ZordWriter.
+there's not much point in using zord.Writer.
 
 ## Duplicate Keys
 
-zerolog doesn't deduplicate keys and neither does ZordWriter. Duplicate keys
+zerolog doesn't deduplicate keys and neither does zord.Writer. Duplicate keys
 will maintain their ordering relative to each other.
 
 ## Binary Logs (CBOR)
 
-If compiled with the binary_log build tag, ZordWriter won't inspect or modify
+If compiled with the binary_log build tag, zord.Writer won't inspect or modify
 the bytes it's given.
 
 ## Efficiency
 
-ZordWriter parses and reassembles the event object, so there's inevitably some
+zord.Writer parses and reassembles the event object, so there's inevitably some
 overhead compared using just zerolog.
 
 ```

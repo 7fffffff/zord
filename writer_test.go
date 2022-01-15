@@ -70,7 +70,7 @@ var zordWriterTests = []zordWriterTest{
 
 func TestZordWriter(t *testing.T) {
 	buf := bytes.NewBuffer(nil)
-	writer := NewZordWriter()
+	writer := NewWriter()
 	writer.Output = buf
 	for i, test := range zordWriterTests {
 		buf.Reset()
