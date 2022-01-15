@@ -189,103 +189,88 @@ func (p *parser) parseNull(buf []byte, initialPos int) (end int, err error) {
 
 func (p *parser) parseNumber(buf []byte, initialPos int) (end int, err error) {
 	i := initialPos
-	i, err = p.parseNumberMinus(buf, i)
-	if err != nil {
-		return i, err
-	}
-	i, err = p.parseNumberInt(buf, i)
-	if err != nil {
-		return i, err
-	}
-	i, err = p.parseNumberFrac(buf, i)
-	if err != nil {
-		return i, err
-	}
-	i, err = p.parseNumberExp(buf, i)
-	return i, err
-}
-
-func (p *parser) parseNumberExp(buf []byte, initialPos int) (end int, err error) {
-	i := initialPos
-	if i >= len(buf) {
-		return len(buf), parseErrorAt(len(buf), fmt.Errorf("number exp: %w", io.ErrUnexpectedEOF))
-	}
-	if buf[i] != 'e' && buf[i] != 'E' {
-		return i, nil
-	}
-	i++
-	if i >= len(buf) {
-		return len(buf), parseErrorAt(len(buf), fmt.Errorf("number exp: %w", io.ErrUnexpectedEOF))
-	}
-	// optional
-	if buf[i] == '+' || buf[i] == '-' {
+	// NumberMinus
+	if i < len(buf) && buf[i] == '-' {
 		i++
 	}
+	// NumberInt
+	leadingZero := false
 	digits := 0
-	for i < len(buf) && '0' <= buf[i] && buf[i] <= '9' {
-		digits++
-		i++
-	}
-	if i >= len(buf) {
-		return len(buf), parseErrorAt(len(buf), fmt.Errorf("number exp: %w", io.ErrUnexpectedEOF))
-	}
-	if digits == 0 {
-		return i, parseErrorAt(i, fmt.Errorf("number exp: unexpected 0x%X", buf[i]))
-	}
-	return i, nil
-}
-
-func (p *parser) parseNumberFrac(buf []byte, initialPos int) (end int, err error) {
-	i := initialPos
-	if i >= len(buf) {
-		return len(buf), parseErrorAt(len(buf), fmt.Errorf("number frac: %w", io.ErrUnexpectedEOF))
-	}
-	if buf[i] != '.' {
-		return i, nil
-	}
-	i++
-	digits := 0
-	for i < len(buf) && '0' <= buf[i] && buf[i] <= '9' {
-		digits++
-		i++
-	}
-	if i >= len(buf) {
-		return len(buf), parseErrorAt(len(buf), fmt.Errorf("number frac: %w", io.ErrUnexpectedEOF))
-	}
-	if digits == 0 {
-		return i, parseErrorAt(i, fmt.Errorf("number frac: unexpected 0x%X", buf[i]))
-	}
-	return i, nil
-}
-
-func (p *parser) parseNumberInt(buf []byte, initialPos int) (end int, err error) {
-	i := initialPos
 	if i < len(buf) && buf[i] == '0' {
-		return i + 1, nil
-	}
-	digits := 0
-	for i < len(buf) && '0' <= buf[i] && buf[i] <= '9' {
+		leadingZero = true
 		digits++
 		i++
 	}
+	for i < len(buf) {
+		b := buf[i]
+		if !leadingZero && '0' <= b && b <= '9' {
+			digits++
+			i++
+			continue
+		}
+		if digits > 0 {
+			switch b {
+			case '.':
+				i++
+				goto NumberFrac
+			case 'e', 'E':
+				i++
+				goto NumberExp
+			}
+		}
+		break
+	}
 	if i >= len(buf) {
-		return len(buf), parseErrorAt(len(buf), fmt.Errorf("number int: %w", io.ErrUnexpectedEOF))
+		return len(buf), parseErrorAt(i, fmt.Errorf("number int: %w", io.ErrUnexpectedEOF))
 	}
 	if digits == 0 {
-		return i, parseErrorAt(i, fmt.Errorf("number int: unexpected 0x%X", buf[i]))
+		return i + 1, parseErrorAt(i, fmt.Errorf("number int: unexpected 0x%X", buf[i]))
 	}
 	return i, nil
-}
-
-func (p *parser) parseNumberMinus(buf []byte, initialPos int) (end int, err error) {
-	i := initialPos
+NumberFrac:
+	digits = 0
+	for i < len(buf) {
+		b := buf[i]
+		if '0' <= b && b <= '9' {
+			digits++
+			i++
+			continue
+		}
+		if digits > 0 && (b == 'e' || b == 'E') {
+			i++
+			goto NumberExp
+		}
+		break
+	}
 	if i >= len(buf) {
-		return len(buf), parseErrorAt(len(buf), fmt.Errorf("number minus: %w", io.ErrUnexpectedEOF))
+		return len(buf), parseErrorAt(i, fmt.Errorf("number frac: %w", io.ErrUnexpectedEOF))
 	}
-	if buf[i] != '-' {
-		return i, nil
+	if digits == 0 {
+		return i + 1, parseErrorAt(i, fmt.Errorf("number frac: unexpected 0x%X", buf[i]))
 	}
-	return i + 1, nil
+	return i, nil
+NumberExp:
+	// optional leading + or -
+	if i < len(buf) && (buf[i] == '+' || buf[i] == '-') {
+		i++
+	}
+	digits = 0
+	for i < len(buf) {
+		b := buf[i]
+		if '0' <= b && b <= '9' {
+			digits++
+			i++
+			continue
+		}
+		break
+	}
+	if i >= len(buf) {
+		return len(buf), parseErrorAt(i, fmt.Errorf("number exp: %w", io.ErrUnexpectedEOF))
+	}
+	if digits == 0 {
+		return i + 1, parseErrorAt(i, fmt.Errorf("number exp: unexpected 0x%X", buf[i]))
+	}
+	return i, nil
 }
 
 func (p *parser) parseObject(depth int, buf []byte, initialPos int) (end int, err error) {
