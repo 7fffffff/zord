@@ -81,5 +81,5 @@ BenchmarkZordWriter-12              333338      3575 ns/op     2120 B/op     24 
 
 ## License
 
-Round Robin License:
-https://roundrobinlicense.com/2.0.0
+Mozilla Public License 2.0:
+https://www.mozilla.org/MPL/2.0/
