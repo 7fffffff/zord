@@ -9,9 +9,7 @@ import (
 )
 
 var (
-	errEndArray  = errors.New("]")
-	errEndObject = errors.New("}")
-	errMaxDepth  = errors.New("exceeded max depth")
+	errMaxDepth = errors.New("exceeded max depth")
 )
 
 type kv struct {
