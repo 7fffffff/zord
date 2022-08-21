@@ -60,7 +60,7 @@ func (p *parser) parse(buf []byte) (pairs []kv, n int, err error) {
 		}
 		if len(pairs) > 0 {
 			if b != ',' {
-				return pairs, n + 1, parseErrorAt(n, fmt.Errorf("parse: unexpected 0x%X", b))
+				return pairs, n + 1, parseErrorAt(n, fmt.Errorf("parse comma: unexpected 0x%X", b))
 			}
 			n++
 			n = skipWhitespace(buf, n)
@@ -120,7 +120,7 @@ func (p *parser) parseArray(depth int, buf []byte, initialPos int) (end int, err
 		}
 		if numValues > 0 {
 			if b != ',' {
-				return i + 1, parseErrorAt(i, fmt.Errorf("array: unexpected 0x%X", b))
+				return i + 1, parseErrorAt(i, fmt.Errorf("array comma: unexpected 0x%X", b))
 			}
 			i++
 			i = skipWhitespace(buf, i)
@@ -296,7 +296,7 @@ func (p *parser) parseObject(depth int, buf []byte, initialPos int) (end int, er
 		i = skipWhitespace(buf, i)
 		valueEnd, err := p.parseValue(depth, buf, i)
 		if err != nil {
-			return valueEnd, err
+			return valueEnd, fmt.Errorf("object value: %w", err)
 		}
 		i = valueEnd
 		numPairs++

@@ -17,7 +17,8 @@ type reorderTest struct {
 
 func errorAtFunc(pos int) func(error) bool {
 	return func(err error) bool {
-		if parseErr, ok := err.(errorAt); ok {
+		var parseErr errorAt
+		if errors.As(err, &parseErr) {
 			if parseErr.Pos() == pos {
 				return true
 			}
@@ -40,7 +41,8 @@ func errorIsAtFunc(expected error, pos int) func(error) bool {
 		if err == nil || expected == nil {
 			return false
 		}
-		if parseErr, ok := err.(errorAt); ok {
+		var parseErr errorAt
+		if errors.As(err, &parseErr) {
 			if !errors.Is(parseErr, expected) {
 				return false
 			}
